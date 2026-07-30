@@ -1,0 +1,381 @@
+<h2>知识库管理页布局方案</h2>
+<p class="subtitle">文档上传 · 分块预览 · 向量化状态 · 检索测试 · 纯 Iconfont 图标</p>
+
+<!-- 通用 SVG 图标定义 -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="icon-plus" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M512 128c-35.3 0-64 28.7-64 64v256H192c-35.3 0-64 28.7-64 64s28.7 64 64 64h256v256c0 35.3 28.7 64 64 64s64-28.7 64-64V576h256c35.3 0 64-28.7 64-64s-28.7-64-64-64H576V192c0-35.3-28.7-64-64-64z"/>
+  </symbol>
+  <symbol id="icon-upload" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M896 704c-17.7 0-32 14.3-32 32v128H160V736c0-17.7-14.3-32-32-32s-32 14.3-32 32v128c0 35.3 28.7 64 64 64h704c35.3 0 64-28.7 64-64V736c0-17.7-14.3-32-32-32zM483.8 159.8L483.8 159.8c-12.5-12.5-32.8-12.5-45.3 0l-256 256c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L480 408.9V736c0 17.7 14.3 32 32 32s32-14.3 32-32V408.9l197.2 252.2c6.2 6.2 14.4 9.4 22.6 9.4s16.4-3.1 22.6-9.4c12.5-12.5 12.5-32.8 0-45.3l-256-256z"/>
+  </symbol>
+  <symbol id="icon-download" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M896 704c-17.7 0-32 14.3-32 32v128H160V736c0-17.7-14.3-32-32-32s-32 14.3-32 32v128c0 35.3 28.7 64 64 64h704c35.3 0 64-28.7 64-64V736c0-17.7-14.3-32-32-32zM540.2 159.8c-12.5-12.5-32.8-12.5-45.3 0l-256 256c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L480 408.9V736c0 17.7 14.3 32 32 32s32-14.3 32-32V408.9l197.2 252.2c6.2 6.2 14.4 9.4 22.6 9.4s16.4-3.1 22.6-9.4c12.5-12.5 12.5-32.8 0-45.3l-256-256z"/>
+  </symbol>
+  <symbol id="icon-delete" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 192H640V128c0-35.3-28.7-64-64-64H448c-35.3 0-64 28.7-64 64v64H192c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32z m-384-64h128v64H448V128zM768 384H256v512c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V384z"/>
+  </symbol>
+  <symbol id="icon-search" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M945 873L768 696c48-58 80-128 96-200h-64c-14 56-38 106-72 150L544 372c96-50 160-148 160-262C704 64 608 0 496 0S288 64 288 110c0 114 64 212 160 262L48 814c-32 32-32 80 0 112s80 32 112 0l336-336c48 24 96 38 144 48v64c0 32 32 64 64 64s64-32 64-64v-64c96-14 176-58 240-126l176 176c16 16 32 16 48 0s16-32 0-48z"/>
+  </symbol>
+  <symbol id="icon-file" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 128H640L576 64H192c-35.3 0-64 28.7-64 64v768c0 35.3 28.7 64 64 64h640c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64z m0 768H192V128h352l64 64h224v704z"/>
+  </symbol>
+  <symbol id="icon-file-md" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 128H640L576 64H192c-35.3 0-64 28.7-64 64v768c0 35.3 28.7 64 64 64h640c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64z m0 768H192V128h352l64 64h224v704z"/>
+    <text x="512" y="600" font-size="200" fill="currentColor" text-anchor="middle" font-weight="700">M</text>
+  </symbol>
+  <symbol id="icon-file-txt" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 128H640L576 64H192c-35.3 0-64 28.7-64 64v768c0 35.3 28.7 64 64 64h640c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64z m0 768H192V128h352l64 64h224v704z"/>
+    <text x="512" y="600" font-size="160" fill="currentColor" text-anchor="middle" font-weight="700">T</text>
+  </symbol>
+  <symbol id="icon-folder" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M896 256H544l-64-64H192c-35.3 0-64 28.7-64 64v512c0 35.3 28.7 64 64 64h704c35.3 0 64-28.7 64-64V320c0-35.3-28.7-64-64-64z m0 512H192V256h256l64 64h384v448z"/>
+  </symbol>
+  <symbol id="icon-database" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M512 0C265.6 0 64 80 64 192v640c0 112 201.6 192 448 192s448-80 448-192V192C960 80 758.4 0 512 0z m0 64c211.2 0 384 60.8 384 128s-172.8 128-384 128S128 259.2 128 192 300.8 64 512 64z m0 896c-211.2 0-384-60.8-384-128V320c64 48 160 80 272 92.8V480c0 17.6 14.4 32 32 32s32-14.4 32-32v-67.2C576 416 672 432 768 432v96c0 17.6 14.4 32 32 32s32-14.4 32-32v-96c64-12.8 128-32 192-64v416c0 67.2-172.8 128-384 128z"/>
+  </symbol>
+  <symbol id="icon-test" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M928 192H96c-35.3 0-64 28.7-64 64v512c0 35.3 28.7 64 64 64h832c35.3 0 64-28.7 64-64V256c0-35.3-28.7-64-64-64z m0 576H96V256h832v512z"/>
+    <path fill="currentColor" d="M192 384h192v64H192zM192 512h192v64H192zM192 640h192v64H192zM608 320l-64 64 96 96-160 160h-32v-32l160-160-96-96z"/>
+  </symbol>
+  <symbol id="icon-list" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M896 128H128c-35.3 0-64 28.7-64 64v640c0 35.3 28.7 64 64 64h768c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64z m0 704H128V192h768v640z"/>
+    <path fill="currentColor" d="M256 320h512v64H256zM256 480h512v64H256zM256 640h512v64H256z"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M912 192L320 784 112 576l-64 64 272 272 624-624z"/>
+  </symbol>
+  <symbol id="icon-close" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M563.8 512l261.9-261.9c14.3-14.3 14.3-37.5 0-51.7-14.3-14.3-37.5-14.3-51.7 0L512 460.3 250.1 198.4c-14.3-14.3-37.5-14.3-51.7 0-14.3 14.3-14.3 37.5 0 51.7L460.3 512 198.4 773.9c-14.3 14.3-14.3 37.5 0 51.7 14.3 14.3 37.5 14.3 51.7 0L512 563.8l261.9 261.9c14.3 14.3 37.5 14.3 51.7 0 14.3-14.3 14.3-37.5 0-51.7L563.8 512z"/>
+  </symbol>
+  <symbol id="icon-refresh" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 512c0-179.2-140.8-320-320-320S192 332.8 192 512s140.8 320 320 320c83.2 0 160-32 217.6-83.2l-44.8-51.2C640 736 576 768 512 768c-140.8 0-256-115.2-256-256s115.2-256 256-256 256 115.2 256 256h-128l160 192 160-192H832z"/>
+  </symbol>
+  <symbol id="icon-chart-pie" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M448 64C200.6 64 0 264.6 0 512s200.6 448 448 448 448-200.6 448-448S695.4 64 448 64z m0 832C235.9 896 64 724.1 64 512S235.9 128 448 128v384h384c0 212.1-171.9 384-384 384z"/>
+  </symbol>
+  <symbol id="icon-book" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M896 128H256c-35.3 0-64 28.7-64 64v640c0 35.3 28.7 64 64 64h640c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64z m0 704H256V192h640v640z"/>
+  </symbol>
+  <symbol id="icon-bolt" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M576 128L192 576h256l-64 320 384-448H512l64-320z"/>
+  </symbol>
+  <symbol id="icon-edit" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M832 64H192c-35.3 0-64 28.7-64 64v768c0 35.3 28.7 64 64 64h640c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64z m0 832H192V128h640v768z"/>
+  </symbol>
+  <symbol id="icon-cloud" viewBox="0 0 1024 1024">
+    <path fill="currentColor" d="M768 384h-32c-17.6-123.4-123.4-218.7-256-218.7S241.6 260.6 224 384h-32c-123.7 0-224 100.3-224 224s100.3 224 224 224h576c123.7 0 224-100.3 224-224s-100.3-224-224-224z m0 384H192c-88.2 0-160-71.8-160-160s71.8-160 160-160h64v-32c0-106 86-192 192-192s192 86 192 192v32h128c88.2 0 160 71.8 160 160s-71.8 160-160 160z"/>
+  </symbol>
+</svg>
+
+<!-- 方案 A: 左侧文档列表 + 右侧详情/分块预览 -->
+<div class="card" data-choice="doc-list-detail" onclick="toggleSelect(this)" style="margin-bottom:16px;cursor:pointer">
+  <div class="card-image" style="padding:16px;background:#fafafa">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">方案 A · 左侧文档列表 + 右侧分块预览</div>
+    
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;height:400px">
+      <!-- 左侧文档列表 -->
+      <div style="width:200px;background:#f9fafb;border-right:1px solid #e5e7eb;padding:10px 8px;display:flex;flex-direction:column">
+        <!-- 顶部统计 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:600;color:#374151;display:flex;align-items:center;gap:4px">
+            <svg width="11" height="11" color="#6366f1"><use href="#icon-folder"/></svg>
+            <span>文档库</span>
+          </div>
+          <svg width="10" height="10" color="#6366f1"><use href="#icon-plus"/></svg>
+        </div>
+        
+        <!-- 上传按钮 -->
+        <div style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff;padding:8px;border-radius:6px;font-size:10px;text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer">
+          <svg width="10" height="10" color="#fff"><use href="#icon-upload"/></svg>
+          <span>上传文档</span>
+        </div>
+        
+        <!-- 文档列表 -->
+        <div style="flex:1;overflow-y:auto">
+          <div style="background:linear-gradient(90deg,#eef2ff 0%,transparent 100%);border-left:2px solid #6366f1;padding:6px;margin:0 0 4px;border-radius:0 4px 4px 0">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <svg width="10" height="10" color="#6366f1"><use href="#icon-file-md"/></svg>
+              <span style="font-size:10px;color:#4338ca;font-weight:600;flex:1">工作规范.md</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:7px;color:#9ca3af">
+              <span>24 块</span>
+              <span>·</span>
+              <span style="color:#10b981;display:flex;align-items:center;gap:2px"><svg width="6" height="6"><use href="#icon-check"/></svg>已索引</span>
+            </div>
+          </div>
+          
+          <div style="padding:6px;margin:0 0 4px">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <svg width="10" height="10" color="#8b5cf6"><use href="#icon-file-txt"/></svg>
+              <span style="font-size:10px;color:#6b7280;flex:1">话术库.txt</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:7px;color:#9ca3af">
+              <span>18 块</span>
+              <span>·</span>
+              <span style="color:#10b981">已索引</span>
+            </div>
+          </div>
+          
+          <div style="padding:6px;margin:0 0 4px;opacity:0.6">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <svg width="10" height="10" color="#f59e0b"><use href="#icon-file-md"/></svg>
+              <span style="font-size:10px;color:#6b7280;flex:1">产品手册.md</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:7px;color:#f59e0b">
+              <svg width="7" height="7"><use href="#icon-refresh"/></svg>
+              <span>向量化中 12/30</span>
+            </div>
+          </div>
+          
+          <div style="padding:6px;margin:0 0 4px;opacity:0.4">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <svg width="10" height="10" color="#ef4444"><use href="#icon-file-txt"/></svg>
+              <span style="font-size:10px;color:#6b7280;flex:1">旧文档.txt</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:7px;color:#ef4444">
+              <span>索引失败</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 底部统计 -->
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb">
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px">
+            <div style="font-size:8px;color:#6b7280;margin-bottom:3px;display:flex;align-items:center;gap:3px"><svg width="7" height="7" color="#6366f1"><use href="#icon-database"/></svg>向量库</div>
+            <div style="display:flex;justify-content:space-between;font-size:8px">
+              <span style="color:#6b7280">文档</span>
+              <span style="color:#111;font-weight:600">4</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:8px">
+              <span style="color:#6b7280">分块</span>
+              <span style="color:#111;font-weight:600">66</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:8px">
+              <span style="color:#6b7280">大小</span>
+              <span style="color:#111;font-weight:600">2.4 MB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧详情 -->
+      <div style="flex:1;padding:12px;display:flex;flex-direction:column">
+        <!-- 顶部 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" color="#6366f1"><use href="#icon-file-md"/></svg>
+            <span style="font-size:11px;font-weight:600;color:#111">工作规范.md</span>
+            <span style="font-size:7px;color:#10b981;background:#d1fae5;padding:1px 4px;border-radius:3px;display:flex;align-items:center;gap:2px"><svg width="6" height="6"><use href="#icon-check"/></svg>已索引</span>
+          </div>
+          <div style="display:flex;gap:4px">
+            <div style="background:#f3f4f6;color:#374151;padding:3px 6px;border-radius:4px;font-size:9px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#374151"><use href="#icon-test"/></svg>检索测试</div>
+            <div style="background:#f3f4f6;color:#374151;padding:3px 6px;border-radius:4px;font-size:9px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#374151"><use href="#icon-refresh"/></svg>重新索引</div>
+            <div style="background:#f3f4f6;color:#374151;padding:3px 6px;border-radius:4px;font-size:9px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#374151"><use href="#icon-download"/></svg>导出</div>
+            <div style="background:#fef2f2;color:#ef4444;padding:3px 6px;border-radius:4px;font-size:9px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#ef4444"><use href="#icon-delete"/></svg>删除</div>
+          </div>
+        </div>
+        
+        <!-- 元信息 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:6px">
+            <div style="font-size:7px;color:#6b7280">分块数</div>
+            <div style="font-size:11px;color:#6366f1;font-weight:700">24</div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:6px">
+            <div style="font-size:7px;color:#6b7280">文件大小</div>
+            <div style="font-size:11px;color:#6366f1;font-weight:700">856 KB</div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:6px">
+            <div style="font-size:7px;color:#6b7280">上传时间</div>
+            <div style="font-size:9px;color:#111;font-weight:600">2026-07-28</div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:6px">
+            <div style="font-size:7px;color:#6b7280">最后检索</div>
+            <div style="font-size:9px;color:#111;font-weight:600">2 分钟前</div>
+          </div>
+        </div>
+        
+        <!-- 分块预览 -->
+        <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:9px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:4px"><svg width="8" height="8" color="#6366f1"><use href="#icon-list"/></svg>分块预览</div>
+            <div style="display:flex;gap:4px">
+              <span style="font-size:7px;color:#6366f1;background:#eef2ff;padding:1px 4px;border-radius:3px">全部 24</span>
+              <span style="font-size:7px;color:#10b981;background:#d1fae5;padding:1px 4px;border-radius:3px">已索引 24</span>
+            </div>
+          </div>
+          
+          <div style="background:#fff;border:1px solid #f3f4f6;border-radius:4px;padding:6px;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:8px;color:#6366f1;font-weight:600">#1 · 0-128 字</span>
+              <span style="font-size:7px;color:#9ca3af">hash: a3f2...</span>
+            </div>
+            <div style="font-size:9px;color:#374151;line-height:1.5">本规范适用于公司全体员工的日常办公行为，包括但不限于邮件、即时通讯、会议沟通...</div>
+          </div>
+          
+          <div style="background:#fff;border:1px solid #f3f4f6;border-radius:4px;padding:6px;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:8px;color:#6366f1;font-weight:600">#2 · 128-256 字</span>
+              <span style="font-size:7px;color:#9ca3af">hash: b7c1...</span>
+            </div>
+            <div style="font-size:9px;color:#374151;line-height:1.5">第二章 邮件沟通规范。所有对外邮件必须使用公司邮箱，标题需简明扼要概括内容...</div>
+          </div>
+          
+          <div style="background:#fff;border:1px solid #f3f4f6;border-radius:4px;padding:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:8px;color:#6366f1;font-weight:600">#3 · 256-384 字</span>
+              <span style="font-size:7px;color:#9ca3af">hash: c9d4...</span>
+            </div>
+            <div style="font-size:9px;color:#374151;line-height:1.5">第三章 即时通讯规范。工作群内回复应在 30 分钟内完成，紧急事项需电话确认...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <h3>A. 文档列表 + 分块预览（推荐）</h3>
+    <p>左侧文档管理，右侧分块详情+元信息。支持上传、重新索引、删除、检索测试。</p>
+  </div>
+</div>
+
+<!-- 方案 B: 卡片网格 + 拖拽上传 -->
+<div class="card" data-choice="card-drag" onclick="toggleSelect(this)" style="margin-bottom:16px;cursor:pointer">
+  <div class="card-image" style="padding:16px;background:#fafafa">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">方案 B · 拖拽上传区 + 卡片网格</div>
+    
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:12px">
+      <!-- 拖拽上传区 -->
+      <div style="border:2px dashed #c7d2fe;border-radius:8px;padding:16px;text-align:center;margin-bottom:10px;background:linear-gradient(135deg,#fafbff 0%,#f5f3ff 100%)">
+        <svg width="20" height="20" color="#6366f1" style="margin:0 auto 4px;display:block"><use href="#icon-cloud"/></svg>
+        <div style="font-size:10px;color:#6366f1;font-weight:600">拖拽文件到此处上传</div>
+        <div style="font-size:8px;color:#9ca3af;margin-top:2px">支持 .md / .txt 格式，单文件 ≤ 10MB</div>
+      </div>
+      
+      <!-- 卡片网格 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:4px">
+              <svg width="10" height="10" color="#6366f1"><use href="#icon-file-md"/></svg>
+              <span style="font-size:10px;color:#111;font-weight:600">工作规范.md</span>
+            </div>
+            <span style="font-size:7px;color:#10b981;background:#d1fae5;padding:1px 4px;border-radius:3px">已索引</span>
+          </div>
+          <div style="font-size:8px;color:#9ca3af;margin-bottom:4px">24 块 · 856 KB</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:4px">
+              <svg width="10" height="10" color="#8b5cf6"><use href="#icon-file-txt"/></svg>
+              <span style="font-size:10px;color:#111;font-weight:600">话术库.txt</span>
+            </div>
+            <span style="font-size:7px;color:#10b981;background:#d1fae5;padding:1px 4px;border-radius:3px">已索引</span>
+          </div>
+          <div style="font-size:8px;color:#9ca3af;margin-bottom:4px">18 块 · 1.2 MB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <h3>B. 拖拽上传 + 卡片网格</h3>
+    <p>视觉友好，拖拽体验佳。但分块详情需弹窗，不适合大量文档。</p>
+  </div>
+</div>
+
+<!-- 方案 C: 表格化管理 -->
+<div class="card" data-choice="table-manage" onclick="toggleSelect(this)" style="margin-bottom:16px;cursor:pointer">
+  <div class="card-image" style="padding:16px;background:#fafafa">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">方案 C · 表格化管理</div>
+    
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:600;color:#374151;display:flex;align-items:center;gap:4px"><svg width="10" height="10" color="#6366f1"><use href="#icon-list"/></svg>文档列表</div>
+        <div style="display:flex;gap:4px">
+          <div style="background:#6366f1;color:#fff;padding:3px 6px;border-radius:4px;font-size:9px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#fff"><use href="#icon-upload"/></svg>上传</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #f3f4f6;border-radius:6px">
+        <div style="display:grid;grid-template-columns:1fr 60px 50px 70px 50px;padding:6px 8px;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+          <div style="font-size:8px;color:#6b7280;font-weight:600">文件名</div>
+          <div style="font-size:8px;color:#6b7280;font-weight:600">分块</div>
+          <div style="font-size:8px;color:#6b7280;font-weight:600">大小</div>
+          <div style="font-size:8px;color:#6b7280;font-weight:600">状态</div>
+          <div style="font-size:8px;color:#6b7280;font-weight:600">操作</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 60px 50px 70px 50px;padding:6px 8px;border-bottom:1px solid #f3f4f6;align-items:center">
+          <div style="display:flex;align-items:center;gap:4px"><svg width="8" height="8" color="#6366f1"><use href="#icon-file-md"/></svg><span style="font-size:9px;color:#111">工作规范.md</span></div>
+          <div style="font-size:9px;color:#6b7280">24</div>
+          <div style="font-size:9px;color:#6b7280">856K</div>
+          <div><span style="font-size:7px;color:#10b981;background:#d1fae5;padding:1px 4px;border-radius:3px">已索引</span></div>
+          <div style="display:flex;gap:4px"><svg width="10" height="10" color="#6b7280"><use href="#icon-test"/></svg><svg width="10" height="10" color="#ef4444"><use href="#icon-delete"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <h3>C. 表格化管理</h3>
+    <p>简洁，但分块详情、检索测试等功能需弹窗承载。</p>
+  </div>
+</div>
+
+<!-- 检索测试弹窗 -->
+<div class="section" style="margin-top:24px;padding:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px">
+  <div style="font-weight:600;color:#111;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:6px">
+    <svg width="12" height="12" color="#6366f1"><use href="#icon-test"/></svg>
+    <span>检索测试弹窗</span>
+  </div>
+  
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-width:340px;box-shadow:0 8px 24px rgba(99,102,241,0.1)">
+    <!-- 查询输入 -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:9px;color:#6b7280;margin-bottom:4px">查询文本</div>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px">
+        <svg width="10" height="10" color="#9ca3af"><use href="#icon-search"/></svg>
+        <span style="font-size:10px;color:#111">邮件回复规范</span>
+      </div>
+    </div>
+    
+    <!-- 参数 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+      <div>
+        <div style="font-size:8px;color:#6b7280;margin-bottom:2px">Top K</div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:4px 6px;font-size:9px;color:#111">5</div>
+      </div>
+      <div>
+        <div style="font-size:8px;color:#6b7280;margin-bottom:2px">相似度阈值</div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:4px 6px;font-size:9px;color:#111">0.7</div>
+      </div>
+    </div>
+    
+    <!-- 检索结果 -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px;margin-bottom:10px">
+      <div style="font-size:8px;color:#6b7280;margin-bottom:4px;display:flex;align-items:center;gap:3px"><svg width="7" height="7" color="#6366f1"><use href="#icon-bolt"/></svg>检索结果（5 条）</div>
+      <div style="background:#fff;border:1px solid #f3f4f6;border-radius:4px;padding:4px 6px;margin-bottom:3px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:8px;color:#6366f1;font-weight:600">#1 · 工作规范.md</span>
+          <span style="font-size:7px;color:#10b981">0.92</span>
+        </div>
+        <div style="font-size:8px;color:#374151;line-height:1.4">第二章 邮件沟通规范。所有对外邮件必须使用公司邮箱...</div>
+      </div>
+      <div style="background:#fff;border:1px solid #f3f4f6;border-radius:4px;padding:4px 6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:8px;color:#6366f1;font-weight:600">#2 · 工作规范.md</span>
+          <span style="font-size:7px;color:#10b981">0.85</span>
+        </div>
+        <div style="font-size:8px;color:#374151;line-height:1.4">邮件回复应在 24 小时内完成，紧急邮件需立即处理...</div>
+      </div>
+    </div>
+    
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <div style="background:#f3f4f6;color:#374151;padding:5px 12px;border-radius:6px;font-size:10px">关闭</div>
+      <div style="background:#6366f1;color:#fff;padding:5px 12px;border-radius:6px;font-size:10px;display:flex;align-items:center;gap:3px"><svg width="8" height="8" color="#fff"><use href="#icon-search"/></svg>检索</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;padding:12px;background:rgba(99,102,241,0.05);border-left:3px solid #6366f1;border-radius:4px">
+  <span class="label">PM 推荐</span>
+  <p style="margin:6px 0 0;font-size:13px"><strong>方案 A · 文档列表 + 分块预览</strong> — 左侧文档列表（含状态：已索引/向量化中/失败），点击选中后右侧显示详情：4 项元信息卡 + 分块预览（每块含序号、字数范围、hash、内容片段）。顶部按钮：检索测试（弹窗）、重新索引、导出、删除。底部向量库总览（文档数/分块数/大小）。上传按钮支持 .md / .txt 拖拽。检索测试弹窗含 Top K、相似度阈值、结果评分展示。</p>
+</div>

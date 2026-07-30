@@ -1,0 +1,32 @@
+# 创意输入法 .gitignore
+# NOTE 排除构建产物、依赖目录、IDE配置，保留源码与文档
+
+# 依赖目录
+node_modules/
+src-tauri/target/
+
+# 构建产物
+dist/
+src-tauri/gen/schemas/
+
+# IDE 与系统文件
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 日志与运行时数据
+*.log
+log/
+src-tauri/logs/
+
+# 备份目录
+.backup_pre_rebuild/
+
+# 环境变量与密钥
+.env
+.env.local
+*.pem
+*.key

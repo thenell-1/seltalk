@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* NOTE 全局基础样式，管理面板与悬浮窗共享 */
+:root {
+  --color-primary: #6366F1;
+  --color-primary-hover: #4F46E5;
+  --color-bg-base: #FFFFFF;
+  --color-bg-page: #F9FAFB;
+  --color-bg-elevated: #FFFFFF;
+  --color-border-base: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-regular: #4B5563;
+  --color-text-secondary: #9CA3AF;
+}
+
+:root.dark {
+  --color-bg-base: #1F2937;
+  --color-bg-page: #111827;
+  --color-bg-elevated: #1F2937;
+  --color-border-base: #374151;
+  --color-text-primary: #F9FAFB;
+  --color-text-regular: #D1D5DB;
+  --color-text-secondary: #9CA3AF;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
