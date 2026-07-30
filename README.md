@@ -84,10 +84,6 @@ seltalk/
 │   │   └── router/
 │   ├── lib/api.ts            # Tauri 命令封装
 │   └── styles/
-├── docs/                     # 文档
-│   ├── 使用教程.md
-│   ├── 效率优化方案.md
-│   └── 阶段二验收清单.md
 ├── float.html                # 悬浮窗入口
 ├── manager.html              # 管理面板入口
 ├── package.json
@@ -179,14 +175,6 @@ cargo clippy --all-targets -- -D warnings
 
 ---
 
-## 📚 文档
-
-- 📖 [使用教程](docs/使用教程.md) — 完整功能操作指南与故障排除
-- ⚡ [效率优化方案](docs/效率优化方案.md) — 性能调优与监控指标设计
-- ✅ [阶段二验收清单](docs/阶段二验收清单.md) — 功能验收清单
-
----
-
 ## 🛠️ 故障排除
 
 | 现象 | 可能原因与解决 |
@@ -196,7 +184,7 @@ cargo clippy --all-targets -- -D warnings
 | 悬浮窗弹出慢 | 1) 检查 LLM 服务端响应延迟（日志中查 `LLM 流式首字节`）；2) 确认启用了 `llm_stream_enabled` |
 | 候选为空 | 1) LLM 配置未填或测试失败；2) 剪贴板内容被黑名单全部过滤 |
 | 逐字输入异常 | 1) 目标应用以管理员权限运行，SelTalk 未提权；2) 调整 `type_min_ms/max_ms` 增大延迟 |
-| LLM 响应超 30s | 多为服务端瓶颈，建议更换模型或服务商（参考 [效率优化方案](docs/效率优化方案.md)） |
+| LLM 响应超 30s | 多为服务端瓶颈，建议更换模型或服务商 |
 
 日志位置：`%APPDATA%\com.seltalk.app\logs\seltalk.log`
 
