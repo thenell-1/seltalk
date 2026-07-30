@@ -1,0 +1,8 @@
+/* NOTE 悬浮窗专属全局样式：透明背景 + 禁选；组件级样式在 App.vue scoped 中 */
+html,
+body,
+#app {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}

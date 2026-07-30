@@ -1,12 +1,14 @@
 [package]
-name = "creative-input-method"
+name = "seltalk"
 version = "0.1.0"
-description = "AI 智能回复助手 - 创意输入法"
-authors = ["CreativeInputMethod"]
+description = "择言 SelTalk - Windows 轻量化 AI 聊天辅助工具"
+authors = ["SelTalk"]
 edition = "2021"
+rust-version = "1.77.2"
 
+# NOTE Tauri 2 约定：lib 生成 cdylib/staticlib/rlib，main.rs 调 lib::run()
 [lib]
-name = "creative_input_method_lib"
+name = "seltalk_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -14,33 +16,34 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-dialog = "2"
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-thiserror = "1"
+thiserror = "2"
 rusqlite = { version = "0.31", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json", "native-tls", "stream"] }
+clipboard-rs = "0.3.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 chrono = { version = "0.4", features = ["serde"] }
-uiautomation = "0.16"
-clipboard-win = "5"
-reqwest = { version = "0.12", features = ["json", "native-tls"] }
 rand = "0.8"
 regex = "1"
+# SSE 流式输出：bytes_stream() 返回 impl Stream，需 StreamExt::next
+futures-util = "0.3"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",
-    "Win32_UI_HiDpi",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_Graphics_Gdi",
-    "Win32_System_Threading",
-    "Win32_System_ProcessStatus",
 ] }
+
+[profile.dev]
+incremental = true
 
 [profile.release]
 panic = "abort"

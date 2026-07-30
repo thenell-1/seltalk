@@ -1,29 +1,46 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CreativeInputMethod",
+  "productName": "SelTalk",
   "version": "0.1.0",
-  "identifier": "com.creative.inputmethod",
+  "identifier": "com.seltalk.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
   },
   "app": {
     "withGlobalTauri": false,
     "windows": [
       {
-        "label": "panel",
-        "title": "创意输入法 - 管理面板",
-        "url": "panel.html",
+        "label": "manager",
+        "title": "择言 - 管理面板",
+        "url": "manager.html",
         "width": 1200,
         "height": 800,
         "minWidth": 960,
         "minHeight": 640,
-        "resizable": true,
-        "fullscreen": false,
         "center": true,
-        "visible": true
+        "visible": true,
+        "resizable": true,
+        "decorations": true
+      },
+      {
+        "label": "float",
+        "title": "择言",
+        "url": "float.html",
+        "width": 420,
+        "height": 360,
+        "minWidth": 320,
+        "minHeight": 240,
+        "center": false,
+        "visible": false,
+        "resizable": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {
@@ -32,7 +49,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -44,5 +61,6 @@
         "type": "downloadBootstrapper"
       }
     }
-  }
+  },
+  "plugins": {}
 }
