@@ -23,6 +23,11 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 thiserror = "2"
 rusqlite = { version = "0.31", features = ["bundled"] }
+# P1.1: DB 连接池（并发读、WAL 模式下读操作互不阻塞）
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
+# P4.4: Rust → TypeScript 类型自动同步（cargo test 时生成 .ts 到 ./bindings/）
+ts-rs = { version = "10", features = ["chrono-impl"] }
 reqwest = { version = "0.12", features = ["json", "native-tls", "stream"] }
 clipboard-rs = "0.3.3"
 tracing = "0.1"
@@ -39,7 +44,16 @@ windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Accessibility",
     "Win32_Graphics_Gdi",
+    "Win32_Security_Cryptography",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    # 模式A 剪贴板快照+复原：OpenClipboard/EmptyClipboard/SetClipboardData/EnumClipboardFormats 等
+    "Win32_System_DataExchange",
 ] }
 
 [profile.dev]

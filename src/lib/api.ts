@@ -1,39 +1,54 @@
-// TODO 人工审查点：1.invoke 封装错误处理 2.事件监听清理 3.类型安全 4.窗口操作
+// TODO 人工审查点：1.invoke 封装错误处理 2.事件监听清理 3.类型安全 4.窗口操作 5.ts-rs 类型同步
 // NOTE Tauri API 封装：统一命令调用 + 事件监听 + 窗口操作，前端各组件共用
+//       P4.4：所有类型从 src-tauri/bindings/ 自动生成的 .ts 文件 import（cargo test 触发）
+//             避免手写 interface 与后端 struct 字段漂移
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+// P4.4：从后端自动生成的 .ts 类型文件导入
+import type { AppConfig } from "@bindings/config/AppConfig";
+import type { PromptTemplate } from "@bindings/db/PromptTemplate";
+import type { ConnectionTestResult } from "@bindings/llm/ConnectionTestResult";
+import type { WordEntry } from "@bindings/db/WordEntry";
+import type { BatchResult } from "@bindings/db/BatchResult";
+import type { WordFreqEntry } from "@bindings/db/WordFreqEntry";
+import type { HistoryEntry } from "@bindings/db/HistoryEntry";
+import type { WordFreqOverview } from "@bindings/commands/WordFreqOverview";
+import type { HistoryListResult } from "@bindings/commands/HistoryListResult";
+import type { PinMode } from "@bindings/commands/PinMode";
+import type { LlmProfile } from "@bindings/db/LlmProfile";
+import type { LlmProfileInput } from "@bindings/db/LlmProfileInput";
+
+// 重新导出所有类型，保持前端调用方式不变（import { AppConfig } from "@/lib/api"）
+export type {
+  AppConfig,
+  PromptTemplate,
+  ConnectionTestResult,
+  WordEntry,
+  BatchResult,
+  WordFreqEntry,
+  HistoryEntry,
+  WordFreqOverview,
+  HistoryListResult,
+  PinMode,
+  LlmProfile,
+  LlmProfileInput,
+};
+
 /** 事件监听清理函数类型 */
 export type UnlistenFn = () => void;
-
-// ===== 类型定义 =====
-
-/** 应用运行时配置 */
-export interface AppConfig {
-  hotkey: string;
-  candidate_count: number;
-  type_min_ms: number;
-  type_max_ms: number;
-  float_w: number;
-  float_h: number;
-  float_always_on_top: boolean;
-}
-
-/** Prompt 模板 */
-export interface PromptTemplate {
-  id: number | null;
-  name: string;
-  template: string;
-  is_default: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 /** 候选数据载荷（Rust 发送到前端） */
 export interface CandidatesPayload {
   origin: string;
   candidates: string[];
+}
+
+/** 批量导入单条结构（前端专用，无对应后端 struct） */
+export interface BatchImportEntry {
+  word: string;
+  category: string;
 }
 
 // ===== 命令调用 =====
@@ -48,9 +63,34 @@ export function cancel(): Promise<void> {
   return invoke<void>("cancel");
 }
 
-/** 切换悬浮窗置顶 */
-export function toggleFloatAlwaysOnTop(): Promise<boolean> {
-  return invoke<boolean>("toggle_float_always_on_top");
+/** R 键重新生成候选（用上次过滤后文本 + 更高 temperature 重试） */
+export function regenerateCandidates(): Promise<void> {
+  return invoke<void>("regenerate_candidates");
+}
+
+/** Ctrl+1/2/3 切换 Prompt 模板（0-based 索引），返回切换后的模板名 */
+export function switchPromptByIndex(index: number): Promise<string> {
+  return invoke<string>("switch_prompt_by_index", { index });
+}
+
+/** 循环切换悬浮窗置顶模式（Off → Normal → Temp → Off），返回切换后的模式 */
+export function cyclePinMode(): Promise<PinMode> {
+  return invoke<PinMode>("cycle_pin_mode");
+}
+
+/** 读取当前置顶模式（供悬浮窗初始化图标） */
+export function getPinMode(): Promise<PinMode> {
+  return invoke<PinMode>("get_pin_mode");
+}
+
+/** 设置悬浮窗透明度（钳制到 0.30~1.0 + 持久化到 settings KV） */
+export function setFloatOpacity(opacity: number): Promise<void> {
+  return invoke<void>("set_float_opacity", { opacity });
+}
+
+/** 读取悬浮窗透明度（缺失返回默认 1.0） */
+export function getFloatOpacity(): Promise<number> {
+  return invoke<number>("get_float_opacity");
 }
 
 /** 保存悬浮窗状态 */
@@ -96,12 +136,21 @@ export function promptList(): Promise<PromptTemplate[]> {
   return invoke<PromptTemplate[]>("prompt_list");
 }
 
-export function promptCreate(name: string, template: string): Promise<number> {
-  return invoke<number>("prompt_create", { name, template });
+export function promptCreate(
+  name: string,
+  template: string,
+  tags?: string,
+): Promise<number> {
+  return invoke<number>("prompt_create", { name, template, tags: tags ?? null });
 }
 
-export function promptUpdate(id: number, name: string, template: string): Promise<void> {
-  return invoke<void>("prompt_update", { id, name, template });
+export function promptUpdate(
+  id: number,
+  name: string,
+  template: string,
+  tags?: string,
+): Promise<void> {
+  return invoke<void>("prompt_update", { id, name, template, tags: tags ?? null });
 }
 
 export function promptDelete(id: number): Promise<void> {
@@ -112,47 +161,51 @@ export function promptSetDefault(id: number): Promise<void> {
   return invoke<void>("prompt_set_default", { id });
 }
 
-// ===== LLM 命令 =====
-
-/** LLM 连通性测试结果 */
-export interface ConnectionTestResult {
-  /** 是否连接成功 */
-  ok: boolean;
-  /** 请求耗时（毫秒） */
-  latency_ms: number;
-  /** 结果消息（成功为"连接成功"，失败为错误详情） */
-  message: string;
+/** 查询全库去重后的标签列表（供前端标签自动补全） */
+export function promptAllTags(): Promise<string[]> {
+  return invoke<string[]>("prompt_all_tags");
 }
+
+// ===== LLM 命令 =====
 
 /** 测试 LLM 连通性，返回结果（ok/延迟/消息） */
 export function testLlmConnection(): Promise<ConnectionTestResult> {
   return invoke<ConnectionTestResult>("test_llm_connection");
 }
 
+// ===== LLM 配置档案命令 =====
+
+/** 查询全部 LLM 配置档案（active 优先，按更新时间倒序） */
+export function llmProfileList(): Promise<LlmProfile[]> {
+  return invoke<LlmProfile[]>("llm_profile_list");
+}
+
+/** 查询当前生效的 LLM 配置档案 */
+export function getActiveLlmProfile(): Promise<LlmProfile | null> {
+  return invoke<LlmProfile | null>("get_active_llm_profile");
+}
+
+/** 新建 LLM 配置档案并设为当前生效（新建即切换，主链路立即使用） */
+export function llmProfileCreate(input: LlmProfileInput): Promise<number> {
+  return invoke<number>("llm_profile_create", { input });
+}
+
+/** 更新指定 LLM 配置档案（保留 is_active 状态不变） */
+export function llmProfileUpdate(id: number, input: LlmProfileInput): Promise<void> {
+  return invoke<void>("llm_profile_update", { id, input });
+}
+
+/** 删除指定 LLM 配置档案（若删除的是 active，自动提升剩余首条） */
+export function llmProfileDelete(id: number): Promise<void> {
+  return invoke<void>("llm_profile_delete", { id });
+}
+
+/** 将指定 LLM 配置档案设为当前生效（下拉切换：互斥置位，主链路立即使用新配置） */
+export function llmProfileSetActive(id: number): Promise<void> {
+  return invoke<void>("llm_profile_set_active", { id });
+}
+
 // ===== 词库命令 =====
-
-/** 词库条目 */
-export interface WordEntry {
-  id: number | null;
-  word: string;
-  category: string;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-/** 批量导入结果 */
-export interface BatchResult {
-  imported: number;
-  skipped: number;
-  errors: string[];
-}
-
-/** 批量导入单条结构 */
-export interface BatchImportEntry {
-  word: string;
-  category: string;
-}
 
 /** 查询词库列表（可选筛选） */
 export function wordList(
@@ -237,24 +290,6 @@ export function blacklistSet(patterns: string[]): Promise<void> {
 
 // ===== 词频命令 =====
 
-/** 词频条目（对应 word_freq 表一行） */
-export interface WordFreqEntry {
-  /** 词语 */
-  word: string;
-  /** 使用次数 */
-  count: number;
-  /** 最后使用时间（RFC3339 格式） */
-  last_used_at: string | null;
-}
-
-/** 词频统计概览 */
-export interface WordFreqOverview {
-  /** 不同的词语总数 */
-  total_words: number;
-  /** 累计使用总次数 */
-  total_usage: number;
-}
-
 /** 查询高频词列表（按使用次数降序） */
 export function wordFreqList(limit?: number): Promise<WordFreqEntry[]> {
   return invoke<WordFreqEntry[]>("word_freq_list", { limit: limit ?? null });
@@ -277,6 +312,36 @@ export function hotkeyIsPaused(): Promise<boolean> {
   return invoke<boolean>("hotkey_is_paused");
 }
 
+// ===== 历史记录命令 =====
+
+/**
+ * 查询历史记录列表（按时间倒序，支持搜索 + 分页）
+ * @param search 可选搜索关键字（模糊匹配 origin 或 selected）
+ * @param limit 每页条数，默认 20，上限 500
+ * @param offset 偏移量，0-based
+ */
+export function historyList(
+  search?: string,
+  limit?: number,
+  offset?: number,
+): Promise<HistoryListResult> {
+  return invoke<HistoryListResult>("history_list", {
+    search: search ?? null,
+    limit: limit ?? null,
+    offset: offset ?? null,
+  });
+}
+
+/** 删除单条历史记录 */
+export function historyDelete(id: number): Promise<void> {
+  return invoke<void>("history_delete", { id });
+}
+
+/** 清空全部历史记录 */
+export function historyClear(): Promise<void> {
+  return invoke<void>("history_clear");
+}
+
 // ===== 开机自启命令 =====
 
 /** 查询开机自启状态 */
@@ -287,6 +352,22 @@ export function autostartGet(): Promise<boolean> {
 /** 设置开机自启 */
 export function autostartSet(enabled: boolean): Promise<void> {
   return invoke<void>("autostart_set", { enabled });
+}
+
+// ===== 剪贴板处理模式命令 =====
+
+/**
+ * 读取剪贴板处理模式
+ * - "A"：兼容复原模式（快照→读文本→复原，会新增 Win+V 历史）
+ * - "B"：纯净只读模式（默认，不修改剪贴板，Win+V 历史无杂乱）
+ */
+export function getClipboardMode(): Promise<string> {
+  return invoke<string>("get_clipboard_mode");
+}
+
+/** 设置剪贴板处理模式（校验 mode ∈ {A, B} + 写 settings + invalidate_cache） */
+export function setClipboardMode(mode: string): Promise<void> {
+  return invoke<void>("set_clipboard_mode", { mode });
 }
 
 // ===== 事件监听 =====
@@ -317,6 +398,21 @@ export function onCandidatesError(handler: (msg: string) => void): Promise<Unlis
 /** 监听流式生成增量 chunk（流式输出开启时，边生成边推送 delta 到悬浮窗渐进显示） */
 export function onCandidatesStream(handler: (delta: string) => void): Promise<UnlistenFn> {
   return listen<string>("candidates-stream", (event) => {
+    handler(event.payload);
+  });
+}
+
+/**
+ * 监听悬浮窗快捷键事件（P-FLOAT-SHORTCUT）
+ *
+ * 由于悬浮窗设置了 WS_EX_NOACTIVATE 扩展样式（不抢焦点），无法直接接收 keydown 事件。
+ * 后端通过全局热键注册 Tab/Up/Down/R/Escape/Ctrl+1/2/3，触发后 emit "float-shortcut"
+ * 事件到前端，payload 为热键字符串（如 "tab"、"up"、"ctrl+1"）。
+ *
+ * 前端根据 payload 路由到等价的 handleKeydown 逻辑，实现键盘交互。
+ */
+export function onFloatShortcut(handler: (shortcut: string) => void): Promise<UnlistenFn> {
+  return listen<string>("float-shortcut", (event) => {
     handler(event.payload);
   });
 }

@@ -110,10 +110,8 @@ fn toggle_hotkey_pause(app: &AppHandle<Wry>) -> AppResult<()> {
     } else {
         // 恢复：从 DB 读取热键配置并重新注册
         let hotkey_str = {
-            let db = state
-                .db
-                .lock()
-                .map_err(|e| AppError::Config(format!("DB 锁中毒: {e}")))?;
+            // P1.1：从连接池获取连接（替代原 state.db.lock()）
+            let db = state.db()?;
             settings::get_setting(&db, KEY_HOTKEY)
                 .ok()
                 .flatten()

@@ -9,6 +9,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
+      // P4.4：ts-rs 生成的 .ts 类型文件 alias（指向 src-tauri/bindings/）
+      "@bindings": resolve(__dirname, "src-tauri/bindings"),
     },
   },
   // Tauri 期望 dev server 固定端口 1420
@@ -18,7 +20,12 @@ export default defineConfig({
     strictPort: true,
     watch: {
       // 忽略 Rust 目录变更，避免触发前端热重载
+      // 注：bindings/*.ts 是自动生成的，不希望触发 HMR（cargo test 时手动刷新即可）
       ignored: ["**/src-tauri/**"],
+    },
+    fs: {
+      // 允许前端 import 从 src-tauri/bindings/ 读取生成的类型文件
+      allow: ["..", resolve(__dirname)],
     },
   },
   build: {

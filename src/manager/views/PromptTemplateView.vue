@@ -1,14 +1,14 @@
 <script setup lang="ts">
-// TODO 人工审查点：1.模板CRUD操作 2.默认模板切换 3.变量渲染预览 4.删除确认
-// NOTE Prompt 模板管理页：列表/新建/编辑/删除/设默认 + 变量提取与渲染预览
+// TODO 人工审查点：1.模板CRUD操作 2.默认模板切换 3.变量渲染预览 4.删除确认 5.标签录入与回显
+// NOTE Prompt 模板管理页：列表/新建/编辑/删除/设默认 + 标签分类 + 变量提取与渲染预览
 import { ref, computed, onMounted, watch } from "vue";
 import {
   NCard, NButton, NSpace, NInput, NTag, NModal, NForm, NFormItem,
-  NPopconfirm, NCollapse, NCollapseItem, useMessage,
+  NPopconfirm, NCollapse, NCollapseItem, NDynamicTags, useMessage,
 } from "naive-ui";
 import {
   promptList, promptCreate, promptUpdate, promptDelete, promptSetDefault,
-  promptExtractVariables, promptRenderPreview,
+  promptExtractVariables, promptRenderPreview, promptAllTags,
   type PromptTemplate,
 } from "@/lib/api";
 
@@ -23,6 +23,10 @@ const showModal = ref(false);
 const editingId = ref<number | null>(null);
 const editingName = ref("");
 const editingTemplate = ref("");
+// 标签数组（编辑时用 NDynamicTags 录入，保存时 join 成逗号串传后端）
+const editingTags = ref<string[]>([]);
+// 全库去重标签列表（供 NDynamicTags 自动补全建议）
+const allTags = ref<string[]>([]);
 
 const isEditing = computed(() => editingId.value !== null);
 const modalTitle = computed(() => isEditing.value ? "编辑模板" : "新建模板");
@@ -39,13 +43,34 @@ async function loadList(): Promise<void> {
   }
 }
 
-onMounted(loadList);
+/// 加载全库去重标签（供编辑弹窗自动补全）
+async function loadAllTags(): Promise<void> {
+  try {
+    allTags.value = await promptAllTags();
+  } catch (e) {
+    console.warn("加载标签列表失败:", e);
+  }
+}
+
+/// 解析标签字符串为数组（逗号分隔）
+function parseTags(tags: string): string[] {
+  return tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+onMounted(() => {
+  void loadList();
+  void loadAllTags();
+});
 
 // 打开新建弹窗
 function handleCreate(): void {
   editingId.value = null;
   editingName.value = "";
   editingTemplate.value = "你是一个聊天回复助手。请根据下面的对话上下文，生成 {{n}} 条简短、自然、口语化的回复候选。每条回复独占一行，用 --- 分隔。\n\n对话上下文：\n{{origin}}";
+  editingTags.value = [];
   showModal.value = true;
   resetPreview();
   void refreshVariables();
@@ -56,6 +81,8 @@ function handleEdit(item: PromptTemplate): void {
   editingId.value = item.id;
   editingName.value = item.name;
   editingTemplate.value = item.template;
+  // 回显标签：逗号串 → 数组
+  editingTags.value = parseTags(item.tags);
   showModal.value = true;
   resetPreview();
   void refreshVariables();
@@ -73,15 +100,19 @@ async function handleSave(): Promise<void> {
   }
 
   try {
+    // 标签数组 → 逗号串（后端存储格式）
+    const tagsStr = editingTags.value.join(",");
     if (isEditing.value && editingId.value !== null) {
-      await promptUpdate(editingId.value, editingName.value, editingTemplate.value);
+      await promptUpdate(editingId.value, editingName.value, editingTemplate.value, tagsStr);
       message.success("模板已更新");
     } else {
-      await promptCreate(editingName.value, editingTemplate.value);
+      await promptCreate(editingName.value, editingTemplate.value, tagsStr);
       message.success("模板已创建");
     }
     showModal.value = false;
     await loadList();
+    // 刷新全库标签（新标签可能加入）
+    void loadAllTags();
   } catch (e) {
     message.error(`保存失败: ${e}`);
   }
@@ -207,6 +238,16 @@ function resetPreview(): void {
           <NSpace align="center">
             <NTag v-if="item.is_default" type="success" size="small">默认</NTag>
             <strong>{{ item.name }}</strong>
+            <!-- 标签展示 -->
+            <NTag
+              v-for="tag in parseTags(item.tags)"
+              :key="tag"
+              size="small"
+              :bordered="false"
+              type="info"
+            >
+              {{ tag }}
+            </NTag>
           </NSpace>
           <NSpace>
             <NButton v-if="!item.is_default" size="small" @click="handleSetDefault(item.id!)">
@@ -241,6 +282,13 @@ function resetPreview(): void {
       <NForm label-placement="top">
         <NFormItem label="模板名称">
           <NInput v-model:value="editingName" placeholder="如：简短回复模板" />
+        </NFormItem>
+        <NFormItem label="标签">
+          <NDynamicTags
+            v-model:value="editingTags"
+            :max="10"
+            placeholder="输入标签后回车（如：简短、正式、委婉、幽默）"
+          />
         </NFormItem>
         <NFormItem label="模板内容">
           <NInput

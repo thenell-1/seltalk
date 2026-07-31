@@ -1,8 +1,10 @@
-/* NOTE 悬浮窗专属全局样式：透明背景 + 禁选；组件级样式在 App.vue scoped 中 */
+/* NOTE 悬浮窗专属全局样式：禁选 + overflow hidden；组件级样式在 App.vue scoped 中
+       背景：使用 var(--st-bg) 不透明背景兜底，确保窗口在任何 WebView2 渲染环境下都可见。
+       若未来重新启用 transparent: true，可改回 transparent 让 .float-shell 的 rgba 背景生效。 */
 html,
 body,
 #app {
-  background: transparent;
+  background: var(--st-bg);
   overflow: hidden;
   user-select: none;
 }

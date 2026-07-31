@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/manager/views/WordCloudView.vue"),
     meta: { title: "高频词云" },
   },
+  {
+    path: "/history",
+    name: "history",
+    component: () => import("@/manager/views/HistoryView.vue"),
+    meta: { title: "历史记录" },
+  },
 ];
 
 export const router = createRouter({

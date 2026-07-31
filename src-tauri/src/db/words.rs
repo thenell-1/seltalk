@@ -1,13 +1,17 @@
-// TODO 人工审查点：1.SQL 注入防护(params!) 2.批量导入事务 3.去重逻辑 4.搜索 LIKE 转义
+// TODO 人工审查点：1.SQL 注入防护(params!) 2.批量导入事务 3.去重逻辑 4.搜索 LIKE 转义 5.ts-rs 类型导出
 // NOTE 词库 CRUD + 批量导入/导出 + 分类/启禁用/搜索
+//       P4.4：WordEntry/BatchResult 派生 TS，cargo test 时自动生成 .ts 到 ./bindings/db/
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::error::AppResult;
 
 /// 词库条目
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../bindings/db/WordEntry.ts")]
 pub struct WordEntry {
+    #[ts(type = "number | null")]
     pub id: Option<i64>,
     pub word: String,
     pub category: String,
@@ -17,7 +21,8 @@ pub struct WordEntry {
 }
 
 /// 批量导入结果
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../bindings/db/BatchResult.ts")]
 pub struct BatchResult {
     pub imported: u32,
     pub skipped: u32,
@@ -200,8 +205,11 @@ pub fn word_categories(conn: &Connection) -> AppResult<Vec<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::init_db;
+    use crate::db::schema::SCHEMA_SQL;
+    use crate::db::migrations::apply_migrations;
 
+    /// 辅助：创建临时文件数据库并返回一个连接
+    /// P1.1：init_db 返回 Pool，测试直接用 Connection 更简单
     fn test_db() -> Connection {
         let path = std::env::temp_dir().join(format!(
             "st_test_words_{}.db",
@@ -210,7 +218,11 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        init_db(&path).unwrap()
+        let conn = Connection::open(&path).unwrap();
+        conn.execute_batch("PRAGMA journal_mode=WAL;").unwrap();
+        conn.execute_batch(SCHEMA_SQL).unwrap();
+        apply_migrations(&conn).unwrap();
+        conn
     }
 
     #[test]

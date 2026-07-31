@@ -38,3 +38,9 @@ src-tauri/WixTools/
 
 # 开发文档（仅本地保留，不上传仓库）
 docs/
+
+# 测试文件（仅本地保留，不上传仓库）
+tests/
+
+# Tauri 自动生成的 TypeScript 类型绑定（cargo test 时重新生成）
+src-tauri/bindings/

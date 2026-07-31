@@ -19,10 +19,17 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@bindings/*": ["src-tauri/bindings/*"]
     },
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src-tauri/bindings/**/*.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

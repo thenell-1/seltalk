@@ -1,5 +1,6 @@
-// TODO 人工审查点：1.热键格式转换 2.重复注册清理 3.插件 Builder 用法 4.热键变更后重注册
+// TODO 人工审查点：1.热键格式转换 2.重复注册清理 3.插件 Builder 用法 4.热键变更后重注册 5.悬浮窗快捷键单键注册风险
 // NOTE 全局热键：通过 tauri-plugin-global-shortcut 注册，触发后调用 orchestrator
+//       悬浮窗可见期间动态注册 Tab/方向键/R/Esc/Ctrl+1/2/3，hide 时注销（WS_EX_NOACTIVATE 配套）
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 
@@ -74,6 +75,80 @@ pub fn register(app: &AppHandle, raw: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// 悬浮窗可见期间需要动态注册的快捷键列表
+///
+/// 设计原则：
+/// - 单键（Tab/Up/Down/R/Escape）：WS_EX_NOACTIVATE 后 webview 不接收键盘事件，
+///   需通过全局热键转发到前端（仅悬浮窗可见期间注册，hide 时注销）
+/// - Ctrl+1/2/3：与主热键（如 Ctrl+Shift+Space）不冲突
+///
+/// 单键注册风险：Win32 RegisterHotKey 可能拒绝纯单键（无修饰键），
+/// 失败的快捷键记录到日志，前端通过鼠标点击候选项作为兜底确认方式。
+pub const FLOAT_SHORTCUTS: &[&str] =
+    &["Tab", "Up", "Down", "R", "Escape", "Ctrl+1", "Ctrl+2", "Ctrl+3"];
+
+/// 注册悬浮窗可见期间的快捷键（不注销主热键）
+///
+/// 调用时机：show_float 之后（[window/mod.rs::show_float](file:///D:/vibecoding/择言（SelTalk）/src-tauri/src/window/mod.rs) 中调用）
+///
+/// 失败处理：逐个注册，失败的快捷键记录到日志但不影响其他。
+/// 调用方（前端）应提供鼠标点击候选作为兜底交互。
+pub fn register_float_shortcuts(app: &AppHandle) -> AppResult<()> {
+    let mut failed: Vec<&str> = Vec::new();
+
+    for &sc in FLOAT_SHORTCUTS {
+        match parse_shortcut(sc) {
+            Ok(shortcut) => {
+                // 已注册的快捷键跳过（避免重复注册错误）
+                // Shortcut 实现了 Copy，无需 clone
+                if app.global_shortcut().is_registered(shortcut) {
+                    continue;
+                }
+                if let Err(e) = app.global_shortcut().register(shortcut) {
+                    tracing::warn!("悬浮窗快捷键注册失败 '{}': {e}", sc);
+                    failed.push(sc);
+                }
+            }
+            Err(e) => {
+                tracing::warn!("悬浮窗快捷键解析失败 '{}': {e}", sc);
+                failed.push(sc);
+            }
+        }
+    }
+
+    if !failed.is_empty() {
+        tracing::warn!(
+            "悬浮窗快捷键部分注册失败（{:?}），对应功能不可用，可用鼠标点击替代",
+            failed
+        );
+    } else {
+        tracing::debug!("悬浮窗快捷键已全部注册");
+    }
+
+    Ok(())
+}
+
+/// 注销悬浮窗快捷键（保留主热键）
+///
+/// 调用时机：hide_float 之后
+///
+/// 注销失败不致命（可能未注册成功），仅记录 debug 日志
+pub fn unregister_float_shortcuts(app: &AppHandle) -> AppResult<()> {
+    for &sc in FLOAT_SHORTCUTS {
+        if let Ok(shortcut) = parse_shortcut(sc) {
+            // 仅注销已注册的快捷键（避免无效注销产生日志噪音）
+            // Shortcut 实现了 Copy，无需 clone
+            if app.global_shortcut().is_registered(shortcut) {
+                if let Err(e) = app.global_shortcut().unregister(shortcut) {
+                    tracing::debug!("悬浮窗快捷键注销失败 '{}': {e}", sc);
+                }
+            }
+        }
+    }
+    tracing::debug!("悬浮窗快捷键已注销");
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,5 +204,47 @@ mod tests {
     fn test_validate_accepts_normal() {
         assert!(validate_shortcut("Alt+X").is_ok());
         assert!(validate_shortcut("Ctrl+Shift+Space").is_ok());
+    }
+
+    // ===== 悬浮窗快捷键测试 =====
+
+    #[test]
+    fn test_float_shortcuts_not_empty() {
+        assert!(!FLOAT_SHORTCUTS.is_empty());
+    }
+
+    #[test]
+    fn test_float_shortcuts_parseable() {
+        // 所有悬浮窗快捷键应能解析为合法 Shortcut（不依赖 Tauri 运行时）
+        for &sc in FLOAT_SHORTCUTS {
+            assert!(parse_shortcut(sc).is_ok(), "悬浮窗快捷键 '{}' 解析失败", sc);
+        }
+    }
+
+    #[test]
+    fn test_float_shortcuts_no_conflict_with_main_hotkey() {
+        // 悬浮窗快捷键不应与主热键（Ctrl+Shift+Space）冲突
+        let main = normalize_hotkey("Ctrl+Shift+Space");
+        for &sc in FLOAT_SHORTCUTS {
+            let normalized = normalize_hotkey(sc);
+            assert_ne!(
+                normalized, main,
+                "悬浮窗快捷键 '{}' 与主热键冲突", sc
+            );
+        }
+    }
+
+    #[test]
+    fn test_float_shortcuts_contains_required_keys() {
+        // 必须包含核心交互键
+        let normalized: Vec<String> = FLOAT_SHORTCUTS
+            .iter()
+            .map(|&s| normalize_hotkey(s))
+            .collect();
+        assert!(normalized.contains(&"tab".to_string()), "缺少 Tab 键");
+        assert!(normalized.contains(&"up".to_string()), "缺少 Up 键");
+        assert!(normalized.contains(&"down".to_string()), "缺少 Down 键");
+        assert!(normalized.contains(&"r".to_string()), "缺少 R 键");
+        assert!(normalized.contains(&"escape".to_string()), "缺少 Escape 键");
     }
 }

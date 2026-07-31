@@ -1,17 +1,21 @@
-// TODO 人工审查点：1.UPSERT 语义正确性 2.事务完整性 3.SQL 注入防护 4.并发安全
+// TODO 人工审查点：1.UPSERT 语义正确性 2.事务完整性 3.SQL 注入防护 4.并发安全 5.ts-rs 类型导出
 // NOTE 词频表操作：记录选中候选的分词、查询高频词、重置词频
 //       场景：用户在悬浮窗选中候选 → orchestrator 分词 → record_batch 累计 → 前端词云页 top 查询
+//       P4.4：WordFreqEntry 派生 TS，cargo test 时自动生成 .ts 到 ./bindings/db/
 use rusqlite::{params, Connection};
 use serde::Serialize;
+use ts_rs::TS;
 
 use crate::error::AppResult;
 
 /// 词频条目（对应 word_freq 表一行）
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../bindings/db/WordFreqEntry.ts")]
 pub struct WordFreqEntry {
     /// 词语
     pub word: String,
     /// 使用次数
+    #[ts(type = "number")]
     pub count: i64,
     /// 最后使用时间（RFC3339 格式）
     pub last_used_at: Option<String>,
@@ -119,9 +123,11 @@ pub fn count_total_usage(conn: &Connection) -> AppResult<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::init_db;
+    use crate::db::schema::SCHEMA_SQL;
+    use crate::db::migrations::apply_migrations;
 
-    /// 辅助：创建内存数据库
+    /// 辅助：创建临时文件数据库并返回一个连接
+    /// P1.1：init_db 返回 Pool，测试直接用 Connection 更简单
     fn test_db() -> Connection {
         let path = std::env::temp_dir().join(format!(
             "st_test_wordfreq_{}.db",
@@ -130,7 +136,11 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        init_db(&path).unwrap()
+        let conn = Connection::open(&path).unwrap();
+        conn.execute_batch("PRAGMA journal_mode=WAL;").unwrap();
+        conn.execute_batch(SCHEMA_SQL).unwrap();
+        apply_migrations(&conn).unwrap();
+        conn
     }
 
     // ===== 正常流程测试 =====

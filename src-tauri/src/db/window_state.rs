@@ -1,11 +1,14 @@
-// TODO 人工审查点：1.坐标边界 2.UPSERT 3.布尔存储
+// TODO 人工审查点：1.坐标边界 2.UPSERT 3.布尔存储 4.ts-rs 类型导出
 // NOTE 窗口布局持久化：位置/尺寸/置顶状态，按窗口 label 存储
+//       P4.4：WindowState 派生 TS，cargo test 时自动生成 .ts 到 ./bindings/db/
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::error::AppResult;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../bindings/db/WindowState.ts")]
 pub struct WindowState {
     pub x: i32,
     pub y: i32,

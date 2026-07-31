@@ -12,6 +12,7 @@ const menuOptions = computed<MenuOption[]>(() => [
   { label: "词库管理", key: "words" },
   { label: "Prompt 模板", key: "prompts" },
   { label: "高频词云", key: "wordcloud" },
+  { label: "历史记录", key: "history" },
   { label: "设置", key: "settings" },
 ]);
 

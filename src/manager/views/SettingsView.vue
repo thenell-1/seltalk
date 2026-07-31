@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // TODO 人工审查点：1.热键录入交互 2.参数边界校验 3.保存反馈 4.配置键名一致 5.黑名单正则合法性
-// NOTE 设置页：全局热键 / 打字速度 / 悬浮窗默认尺寸 / 默认置顶 / 样式预设 / 黑名单
+// NOTE 设置页：全局热键 / 打字速度 / 悬浮窗默认尺寸 / 默认置顶 / 样式预设 / 透明度 / 剪贴板处理模式 / 黑名单
 import { ref, onMounted } from "vue";
 import {
-  NCard, NForm, NFormItem, NInput, NInputNumber, NButton, NSpace, NSwitch, NSelect, useMessage,
+  NCard, NForm, NFormItem, NInput, NInputNumber, NButton, NSpace, NSwitch, NSelect,
+  NSlider, NRadioGroup, NRadio, useMessage,
 } from "naive-ui";
 import {
   getAppConfig, updateHotkey, setSetting, getAllSettings,
   blacklistGet, blacklistSet, autostartGet, autostartSet,
+  getFloatOpacity, setFloatOpacity,
+  getClipboardMode, setClipboardMode,
 } from "@/lib/api";
 import type { AppConfig } from "@/lib/api";
 
@@ -21,6 +24,7 @@ const KEY_FLOAT_H = "float_h";
 const KEY_FLOAT_ALWAYS_ON_TOP = "float_always_on_top";
 const KEY_CANDIDATE_COUNT = "candidate_count";
 const KEY_FLOAT_STYLE_PRESET = "float_style_preset";
+const KEY_FLOAT_FOLLOW_CURSOR = "float_follow_cursor";
 
 /// 默认黑名单正则（与 Rust 端 DEFAULT_BLACKLIST 保持一致）
 const DEFAULT_BLACKLIST_PATTERNS: string[] = [
@@ -45,6 +49,11 @@ const floatW = ref(420);
 const floatH = ref(360);
 const floatAlwaysOnTop = ref(true);
 const floatStylePreset = ref("standard");
+const floatFollowCursor = ref(true);
+// 悬浮窗透明度（0.30~1.0，默认 1.0）
+const floatOpacity = ref(1.0);
+// 剪贴板处理模式（"A"=兼容复原 / "B"=纯净只读，默认 "B"）
+const clipboardMode = ref("B");
 
 // 黑名单
 const blacklistPatterns = ref<string[]>([]);
@@ -72,12 +81,26 @@ onMounted(async () => {
     floatH.value = cfg.float_h;
     floatAlwaysOnTop.value = cfg.float_always_on_top;
 
-    // 加载样式预设 + 黑名单
+    // 加载样式预设 + 跟随鼠标 + 黑名单
     try {
       const all = await getAllSettings();
       floatStylePreset.value = all[KEY_FLOAT_STYLE_PRESET] || "standard";
+      // 跟随鼠标未配置时默认 true（与后端 DEFAULT_FLOAT_FOLLOW_CURSOR 一致）
+      const raw = all[KEY_FLOAT_FOLLOW_CURSOR];
+      floatFollowCursor.value = raw === undefined ? true : (raw === "1" || raw.toLowerCase() === "true");
     } catch {
       // 忽略，使用默认
+    }
+    // 加载透明度 + 剪贴板模式（独立加载，失败不影响其他配置）
+    try {
+      floatOpacity.value = await getFloatOpacity();
+    } catch (e) {
+      console.warn("加载透明度失败:", e);
+    }
+    try {
+      clipboardMode.value = await getClipboardMode();
+    } catch (e) {
+      console.warn("加载剪贴板模式失败:", e);
     }
     await loadBlacklist();
     await loadAutostart();
@@ -182,6 +205,7 @@ async function handleSaveSettings(): Promise<void> {
     await setSetting(KEY_FLOAT_W, floatW.value.toString());
     await setSetting(KEY_FLOAT_H, floatH.value.toString());
     await setSetting(KEY_FLOAT_ALWAYS_ON_TOP, floatAlwaysOnTop.value ? "true" : "false");
+    await setSetting(KEY_FLOAT_FOLLOW_CURSOR, floatFollowCursor.value ? "true" : "false");
     message.success("设置已保存");
   } catch (e) {
     message.error(`保存失败: ${e}`);
@@ -264,6 +288,29 @@ async function onPresetChange(value: string): Promise<void> {
     message.success("样式预设已保存");
   } catch (e) {
     message.error(`保存失败: ${e}`);
+  }
+}
+
+// ===== 透明度（即时保存，悬浮窗下次呼出生效） =====
+
+async function onOpacityChange(value: number): Promise<void> {
+  floatOpacity.value = value;
+  try {
+    await setFloatOpacity(value);
+  } catch (e) {
+    message.error(`透明度保存失败: ${e}`);
+  }
+}
+
+// ===== 剪贴板处理模式（切换即时保存生效） =====
+
+async function onClipboardModeChange(value: string): Promise<void> {
+  clipboardMode.value = value;
+  try {
+    await setClipboardMode(value);
+    message.success(value === "A" ? "已切换为兼容复原模式" : "已切换为纯净只读模式");
+  } catch (e) {
+    message.error(`切换失败: ${e}`);
   }
 }
 </script>
@@ -369,7 +416,58 @@ async function onPresetChange(value: string): Promise<void> {
             @update:value="onPresetChange"
           />
         </NFormItem>
+
+        <NFormItem label="跟随鼠标">
+          <NSpace align="center">
+            <NSwitch v-model:value="floatFollowCursor" :disabled="loading" />
+            <span style="font-size: 13px; color: var(--st-text-soft)">
+              开启后悬浮窗在鼠标光标附近弹出（关闭后沿用上次位置）
+            </span>
+          </NSpace>
+        </NFormItem>
+
+        <NFormItem label="默认透明度">
+          <NSpace align="center" style="width: 100%">
+            <NSlider
+              :value="floatOpacity"
+              :min="0.3"
+              :max="1.0"
+              :step="0.05"
+              :disabled="loading"
+              style="width: 200px"
+              @update:value="onOpacityChange"
+            />
+            <span style="font-size: 13px; color: var(--st-text-soft); min-width: 40px">
+              {{ Math.round(floatOpacity * 100) }}%
+            </span>
+          </NSpace>
+        </NFormItem>
       </NForm>
+    </NCard>
+
+    <!-- 剪贴板处理模式 -->
+    <NCard title="剪贴板处理模式" :bordered="false" style="max-width: 640px; margin-bottom: 16px">
+      <div
+        style="font-size: 13px; color: var(--st-text-soft); margin-bottom: 12px; line-height: 1.6"
+      >
+        控制热键触发时剪贴板的读取方式。模式 B（默认）不修改剪贴板，彻底解决 Win+V 历史杂乱问题。
+      </div>
+      <NRadioGroup :value="clipboardMode" @update:value="onClipboardModeChange">
+        <NSpace vertical :size="12">
+          <NRadio value="B">
+            <strong>纯净只读模式（推荐）</strong>
+            <div style="font-size: 12px; color: var(--st-text-soft); margin-top: 2px">
+              仅读取剪贴板文本，不执行任何写入操作。Win+V 历史无新增条目，稳定性最高。
+            </div>
+          </NRadio>
+          <NRadio value="A">
+            <strong>兼容复原模式</strong>
+            <div style="font-size: 12px; color: var(--st-text-soft); margin-top: 2px">
+              快照→读文本→复原剪贴板原内容。复原时会新增一条 Win+V 历史记录，适合需要恢复原内容的场景。
+            </div>
+          </NRadio>
+        </NSpace>
+      </NRadioGroup>
     </NCard>
 
     <!-- 文本过滤黑名单 -->
